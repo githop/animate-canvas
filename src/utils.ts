@@ -163,7 +163,7 @@ export function draw(ctx: CanvasRenderingContext2D, startX: number, startY: numb
 
             const np: Path = interpolatedPath(iX, iY, endX, endY, amount, '#F90050');
             drawPath(ctx, np.origin.x, np.origin.y, np.end.x, np.end.y, np.color);
-            window.requestAnimationFrame(() => _draw(np.origin.x, np.origin.y, np.end.x, np.end.y, amount + 0.1, h));
+            window.requestAnimationFrame(() => _draw(np.origin.x, np.origin.y, endX, endY, amount + 0.1, h));
         }
     });
 }
