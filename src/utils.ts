@@ -1,3 +1,9 @@
+export const CANVAS_WIDTH = 620;
+export const CANVAS_HEIGHT = 540;
+export const X_OFFSET = 10;
+export const Y_OFFSET = 530;
+export const SIDE_LENGTH = 600;
+
 export interface Point {
     x: number
     y: number
@@ -16,6 +22,7 @@ export interface Cb {
 export interface Path {
     origin: Point
     end: Point
+    color?: string
 }
 
 export interface History {
@@ -23,18 +30,25 @@ export interface History {
     triangles: Triangle[]
 }
 
-function drawPath(ctx: CanvasRenderingContext2D, startX: number, startY: number, endX: number, endY: number) {
+function randomColor() {
+    const colors = ['#F96A00', '#FAAB00', '#DAF204'];
+    return colors[Math.floor(Math.random() * 3)];
+}
+
+function drawPath(ctx: CanvasRenderingContext2D, startX: number, startY: number, endX: number, endY: number, color: string = 'black') {
     ctx.beginPath();
     ctx.moveTo(startX, startY);
     ctx.lineTo(endX, endY);
+    ctx.lineWidth = 3.33;
+    ctx.strokeStyle = color;
     ctx.stroke();
 }
 
 function drawPaths(ctx: CanvasRenderingContext2D, paths: Path[]) {
-    paths.forEach((p: Path) => drawPath(ctx, p.origin.x, p.origin.y, p.end.x, p.end.y));
+    paths.forEach((p: Path) => drawPath(ctx, p.origin.x, p.origin.y, p.end.x, p.end.y, p.color));
 }
 
-function addNextPath(originX: number, originY: number, endX: number, endY: number, paths: Path[]) {
+function addNextPath(originX: number, originY: number, endX: number, endY: number, paths: Path[], color: string) {
     const path: Path = {
         origin: {
             x: originX,
@@ -43,7 +57,8 @@ function addNextPath(originX: number, originY: number, endX: number, endY: numbe
         end: {
             x: endX,
             y: endY
-        }
+        },
+        color
     }
     paths.push(path);
 }
@@ -57,7 +72,7 @@ function addNextTriangle(t: Triangle, ts: Triangle[]) {
 }
 
 export function _drawTriangles(ctx: CanvasRenderingContext2D, triangles: Triangle[]) {
-    triangles.forEach((tri) => _drawTri(ctx, tri))
+    triangles.forEach((tri: Triangle, i: number) => _drawTri(ctx, tri, i))
 }
 
 function _lerp(a: number, b: number, f: number) {
@@ -71,7 +86,6 @@ export async function drawTriangles(ctx: CanvasRenderingContext2D, tri: Triangle
     await draw(ctx, tri.b.x, tri.b.y, tri.c.x, tri.c.y, 0, h);
     await draw(ctx, tri.c.x, tri.c.y, tri.a.x, tri.a.y, 0, h);
     clearPaths(h.paths);
-    addNextTriangle(tri, h.triangles);
 }
 
 export function getPathCords(len: number, xOrigin: number, yOrigin: number): Triangle {
@@ -99,18 +113,31 @@ export function deriveInnerTriangle(len: number, xOrigin: number, yOrigin: numbe
     };
 }
 
-function _drawTri(ctx: CanvasRenderingContext2D, tri: Triangle, fillStyle?: string) {
+function _drawTri(ctx: CanvasRenderingContext2D, tri: Triangle, index: number) {
     ctx.beginPath();
     ctx.moveTo(tri.a.x, tri.a.y);
     ctx.lineTo(tri.b.x, tri.b.y);
     ctx.lineTo(tri.c.x, tri.c.y);
     ctx.closePath();
-    ctx.stroke();
+    ctx.fill()
 }
 
-function clearRect(ctx: CanvasRenderingContext2D) {
-    ctx.clearRect(0, 0, 320, 340);
-    // setTimeout(() => ctx.clearRect(0, 0, 320, 340), 0);
+export function clearRect(ctx: CanvasRenderingContext2D) {
+    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+}
+
+function interpolatedPath(x:number, y:number, endX:number, endY:number, amount:number, color: string): Path {
+    return {
+        origin: {
+            x,
+            y
+        },
+        end: {
+            x: _lerp(x, endX, amount),
+            y: _lerp(y, endY, amount)
+        },
+        color
+    };
 }
 
 export function draw(ctx: CanvasRenderingContext2D, startX: number, startY: number, endX: number, endY: number, amount = 0, h: History) {
@@ -120,12 +147,7 @@ export function draw(ctx: CanvasRenderingContext2D, startX: number, startY: numb
         _draw(startX, startY, endX, endY, amount, h);
 
         function _draw(startX: number, startY: number, endX: number, endY: number, amount = 0, h: History) {
-            
             clearRect(ctx);
-
-            if (h.triangles.length > 0) {
-                _drawTriangles(ctx, h.triangles);
-            }
 
             if (h.paths.length > 0) {
                 drawPaths(ctx, h.paths);
@@ -133,16 +155,15 @@ export function draw(ctx: CanvasRenderingContext2D, startX: number, startY: numb
 
             if (amount >= 1) {
                 drawPaths(ctx, h.paths);
-                drawPath(ctx, iX, iY, endX, endY);
-                addNextPath(iX, iY, endX, endY, h.paths);
+                const color = randomColor();
+                drawPath(ctx, iX, iY, endX, endY, color);
+                addNextPath(iX, iY, endX, endY, h.paths, color);
                 return resolve(true);
             }
 
-            startX = _lerp(iX, endX, amount);
-            startY = _lerp(iY, endY, amount);
-            drawPath(ctx, iX, iY, startX, startY);
-
-            window.requestAnimationFrame(() => _draw(startX, startY, endX, endY, amount + 0.06, h));
+            const np: Path = interpolatedPath(iX, iY, endX, endY, amount, '#F90050');
+            drawPath(ctx, np.origin.x, np.origin.y, np.end.x, np.end.y, np.color);
+            window.requestAnimationFrame(() => _draw(np.origin.x, np.origin.y, np.end.x, np.end.y, amount + 0.1, h));
         }
     });
 }
