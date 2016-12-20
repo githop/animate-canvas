@@ -1,5 +1,10 @@
 
 import { 
+  CANVAS_WIDTH,
+  CANVAS_HEIGHT,
+  X_OFFSET,
+  Y_OFFSET,
+  SIDE_LENGTH,
   Triangle,
   Point,
   Path,
@@ -8,6 +13,7 @@ import {
   deriveInnerTriangle,
   drawTriangles,
   _drawTriangles,
+  clearRect
 } from './utils';
 
 
@@ -18,8 +24,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
 });
 
 function init(cvs: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
-  cvs.width = 320;
-  cvs.height = 340;
+  cvs.width = CANVAS_WIDTH;
+  cvs.height = CANVAS_HEIGHT;
   const history: History = {triangles: [], paths: []};
   window.requestAnimationFrame((event) => {
 
@@ -47,8 +53,8 @@ function init(cvs: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
       }
     }
     
-    start(300, 10, 330, 2, history).then((x:any) => {
-       console.count('all done?');
+    start(SIDE_LENGTH, X_OFFSET, Y_OFFSET, 2, history).then((x:any) => {
+      console.log('all done!');
     });
     
   });
