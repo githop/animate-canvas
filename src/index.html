@@ -11,17 +11,51 @@
 
 <body>
 
-  <style>
+<style>
   #cvs {
     border: 1px solid black;
     background: black;
     width: 100%;
   }
+
+  /* iPads (portrait) ----------- */
+@media only screen 
+and (min-device-width : 768px) 
+and (max-device-width : 1024px) 
+and (orientation : portrait) {
+/* Styles */
+  .wrapper {
+    margin: 0 10em;
+    padding: 0 3em;
+  }
+}
+
+/* Desktops and laptops ----------- */
+@media only screen 
+and (min-width : 1224px) {
+/* Styles */
+  .wrapper {
+    margin: 0 15em;
+    padding: 0 5em;
+  }
+}
+
+/* Large screens ----------- */
+@media only screen 
+and (min-width : 1824px) {
+/* Styles */
+  .wrapper {
+    margin: 0 20em;
+    padding: 0 10em;
+  }
+}
 </style>
 
 <h3>Having fun with canvas animation</h3>
 
-<canvas id="cvs"></canvas>
+<div class="wrapper">
+  <canvas id="cvs"></canvas>
+</div>
 
 <script type="text/javascript" src="https://cdn.polyfill.io/v2/polyfill.min.js?features=Promise"></script>
 </body>
