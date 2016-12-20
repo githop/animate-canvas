@@ -49,7 +49,6 @@ function init(cvs: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
     
     start(300, 10, 330, 2, history).then((x:any) => {
        console.count('all done?');
-      //  setTimeout(() => _drawTriangles(ctx, history.triangles),0);
     });
     
   });
