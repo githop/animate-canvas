@@ -13,6 +13,7 @@ export interface Triangle {
     a: Point
     b: Point
     c: Point
+    centoid?: Point
 }
 
 export interface Cb {
@@ -39,9 +40,18 @@ function drawPath(ctx: CanvasRenderingContext2D, startX: number, startY: number,
     ctx.beginPath();
     ctx.moveTo(startX, startY);
     ctx.lineTo(endX, endY);
-    ctx.lineWidth = 3.33;
+    ctx.lineWidth = 1.33;
     ctx.strokeStyle = color;
     ctx.stroke();
+}
+
+function pathDraw(ctx: CanvasRenderingContext2D, path: Path, color:string = 'black') {
+    ctx.beginPath();
+    ctx.moveTo(path.origin.x, path.origin.y);
+    ctx.lineTo(path.end.x, path.end.y);
+    // ctx.lineWidth = 3.33;
+    ctx.strokeStyle = color;
+    ctx.stroke();   
 }
 
 function drawPaths(ctx: CanvasRenderingContext2D, paths: Path[]) {
@@ -49,10 +59,14 @@ function drawPaths(ctx: CanvasRenderingContext2D, paths: Path[]) {
 }
 
 function addNextPath(originX: number, originY: number, endX: number, endY: number, paths: Path[], color: string) {
-    const path: Path = {
+    paths.push(makePath(originX, originY, endX, endY, color));
+}
+
+export function makePath(iX:number, iY: number, endX: number, endY: number, color: string = 'black'): Path {
+    return {
         origin: {
-            x: originX,
-            y: originY
+            x: iX,
+            y: iY
         },
         end: {
             x: endX,
@@ -60,7 +74,6 @@ function addNextPath(originX: number, originY: number, endX: number, endY: numbe
         },
         color
     }
-    paths.push(path);
 }
 
 function clearPaths(paths: Path[]) {
@@ -81,10 +94,11 @@ function _lerp(a: number, b: number, f: number) {
     return Math.floor(a + f * (b - a));
 }
 
-export async function drawTriangles(ctx: CanvasRenderingContext2D, tri: Triangle, h: History) {
-    await draw(ctx, tri.a.x, tri.a.y, tri.b.x, tri.b.y, 0, h);
-    await draw(ctx, tri.b.x, tri.b.y, tri.c.x, tri.c.y, 0, h);
-    await draw(ctx, tri.c.x, tri.c.y, tri.a.x, tri.a.y, 0, h);
+export async function drawTriangles(ctx: CanvasRenderingContext2D, tri: Triangle, h: History, speed: number) {
+    await draw(ctx, tri.a.x, tri.a.y, tri.b.x, tri.b.y, 0, h, speed);
+    await draw(ctx, tri.b.x, tri.b.y, tri.c.x, tri.c.y, 0, h, speed);
+    await draw(ctx, tri.c.x, tri.c.y, tri.a.x, tri.a.y, 0, h, speed);
+    // await Promise.all([a, b, c]);
     clearPaths(h.paths);
 }
 
@@ -100,16 +114,20 @@ export function getPathCords(len: number, xOrigin: number, yOrigin: number): Tri
 }
 
 export function deriveInnerTriangle(len: number, xOrigin: number, yOrigin: number): Triangle {
-    var s2 = len / 2;
-    var c2 = s2;
-    var b2 = c2 / 2;
-    var a2 = Math.sqrt(Math.pow(c2, 2) - Math.pow(b2, 2));
-    var xOrg2 = xOrigin + b2;
-    var yOrg2 = yOrigin - a2;
+    let s2 = len / 2;
+    let c2 = s2;
+    let b2 = c2 / 2;
+    let a2 = Math.sqrt(Math.pow(c2, 2) - Math.pow(b2, 2));
+    let xOrg2 = xOrigin + b2;
+    let yOrg2 = yOrigin - a2;
+
+    let centoidX = (xOrg2 + (c2 + xOrg2) + (c2 + xOrigin)) / 3
+    let centoidY = (yOrg2 + yOrg2 + yOrigin) / 3
     return {
         a: { x: xOrg2, y: yOrg2 },
         b: { x: c2 + xOrg2, y: yOrg2 },
-        c: { x: c2 + xOrigin, y: yOrigin }
+        c: { x: c2 + xOrigin, y: yOrigin },
+        centoid: { x: centoidX, y: centoidY } 
     };
 }
 
@@ -126,6 +144,10 @@ export function clearRect(ctx: CanvasRenderingContext2D) {
     ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 }
 
+function reqAFrame(cb: Cb) {
+    requestAnimationFrame(cb);
+}
+
 function interpolatedPath(x:number, y:number, endX:number, endY:number, amount:number, color: string): Path {
     return {
         origin: {
@@ -140,7 +162,7 @@ function interpolatedPath(x:number, y:number, endX:number, endY:number, amount:n
     };
 }
 
-export function draw(ctx: CanvasRenderingContext2D, startX: number, startY: number, endX: number, endY: number, amount = 0, h: History) {
+export function draw(ctx: CanvasRenderingContext2D, startX: number, startY: number, endX: number, endY: number, amount = 0, h: History, speed?: number) {
     const [iX, iY] = [startX, startY];
 
     return new Promise((resolve: Cb) => {
@@ -163,7 +185,7 @@ export function draw(ctx: CanvasRenderingContext2D, startX: number, startY: numb
 
             const np: Path = interpolatedPath(iX, iY, endX, endY, amount, '#F90050');
             drawPath(ctx, np.origin.x, np.origin.y, np.end.x, np.end.y, np.color);
-            window.requestAnimationFrame(() => _draw(np.origin.x, np.origin.y, endX, endY, amount + 0.1, h));
+            reqAFrame(() => _draw(np.origin.x, np.origin.y, endX, endY, amount + speed, h));
         }
     });
 }
